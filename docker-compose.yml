@@ -94,6 +94,8 @@ services:
     environment:
       - SERVICE_FQDN_FRONTEND_3000
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
     expose:
       - "3000"
     networks:
