@@ -7,7 +7,7 @@ $h = @{
 }
 
 # IP público atual do servidor (mesmo dos demais apps Coolify)
-$IP = "186.216.178.20"
+$IP = "191.6.127.114"
 
 $updates = @(
   @{ key = "SERVICE_FQDN_BACKEND_8000";  value = "https://api-investiga.$IP.sslip.io" }
