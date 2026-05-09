@@ -32,10 +32,11 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # restringido por proxy/Cloudflare em produção
+        allow_origin_regex=".*",  # qualquer origem (proxy/CF restringe em prod)
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
 
     @app.get("/health", tags=["meta"])
