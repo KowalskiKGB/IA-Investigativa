@@ -6,7 +6,7 @@ version: "3.9"
 # (ex.: investiga.adv.rocketxsistemas.com.br)
 
 services:
-  postgres:
+  pgdb:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
@@ -54,7 +54,7 @@ services:
       - SERVICE_FQDN_BACKEND_8000
       - APP_ENV=${APP_ENV:-production}
       - JWT_SECRET=${JWT_SECRET}
-      - POSTGRES_HOST=postgres
+      - POSTGRES_HOST=pgdb
       - POSTGRES_USER=${POSTGRES_USER:-investiga}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB:-investiga}
@@ -79,7 +79,7 @@ services:
       - traefik.http.routers.investiga-backend.service=investiga-backend
       - traefik.http.services.investiga-backend.loadbalancer.server.port=8000
     depends_on:
-      postgres:
+      pgdb:
         condition: service_healthy
       chromadb:
         condition: service_started
