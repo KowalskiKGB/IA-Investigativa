@@ -1,29 +1,30 @@
 version: "3.9"
 
+# Coolify: o backend recebe o domínio via SERVICE_FQDN_BACKEND_8000
+# (ex.: api.investiga.adv.rocketxsistemas.com.br)
+# o frontend via SERVICE_FQDN_FRONTEND_3000
+# (ex.: investiga.adv.rocketxsistemas.com.br)
+
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER:-investiga}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-investiga}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-investiga}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   chromadb:
     image: chromadb/chroma:latest
     restart: unless-stopped
-    ports:
-      - "8001:8000"
     volumes:
       - chroma_data:/chroma/chroma
     environment:
@@ -35,11 +36,8 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    ports:
-      - "9000:9000"   # API S3
-      - "9001:9001"   # Console
     volumes:
       - minio_data:/data
     healthcheck:
@@ -53,13 +51,24 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: .env
     environment:
-      POSTGRES_HOST: postgres
-      CHROMA_HOST: chromadb
-      MINIO_ENDPOINT: http://minio:9000
-    ports:
-      - "8000:8000"
+      - SERVICE_FQDN_BACKEND_8000
+      - APP_ENV=${APP_ENV:-production}
+      - JWT_SECRET=${JWT_SECRET}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_USER=${POSTGRES_USER:-investiga}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB:-investiga}
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minio}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET=${MINIO_BUCKET:-investiga-docs}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -67,8 +76,6 @@ services:
         condition: service_started
       minio:
         condition: service_healthy
-    volumes:
-      - ./backend:/app
 
   frontend:
     build:
@@ -76,9 +83,10 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-    ports:
-      - "3000:3000"
+      - SERVICE_FQDN_FRONTEND_3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    expose:
+      - "3000"
     depends_on:
       - backend
 
