@@ -8,7 +8,7 @@ from app.auth import AuthContext, get_auth
 from app.db import get_db
 from app.models import Caso, Mensagem
 from app.schemas import ChatIn, ChatOut, ChunkUsado
-from app.services import embeddings, vector_store, claude_svc
+from app.services import embeddings, vector_store, llm, settings_svc
 
 router = APIRouter()
 
@@ -38,8 +38,9 @@ async def perguntar(
         for r in resultados
     ]
 
-    # 3. Chamar Claude
-    resp = claude_svc.chat_investigativo(dados.pergunta, chunks_para_llm)
+    # 3. Chamar LLM
+    cfg = await settings_svc.carregar_dict(db)
+    resp = llm.chat_investigativo(dados.pergunta, chunks_para_llm, db_settings=cfg)
 
     # 4. Persistir histórico
     db.add(Mensagem(

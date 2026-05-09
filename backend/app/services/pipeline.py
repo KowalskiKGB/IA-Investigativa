@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import SessionLocal
 from app.models import Documento, PaginaMD, CorrecaoOCR, Caso
-from app.services import ocr, chunker, embeddings, vector_store, claude_svc, graph as graph_svc, storage
+from app.services import ocr, chunker, embeddings, vector_store, llm, graph as graph_svc, storage, settings_svc
 
 log = logging.getLogger(__name__)
 
@@ -60,9 +60,10 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
 
         # 4. Extração de entidades (1 vez por página) e correções OCR
         async with SessionLocal() as db:
+            cfg = await settings_svc.carregar_dict(db)
             for num, md in paginas:
                 # 4a. Entidades / relações
-                ext = claude_svc.extrair_entidades(md, num)
+                ext = llm.extrair_entidades(md, num, db_settings=cfg)
                 ent_map: dict[str, "uuid.UUID"] = {}
                 for ent in ext.get("entidades", []):
                     if not ent.get("nome"):
@@ -84,7 +85,7 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
                     )
 
                 # 4b. Correções de OCR
-                for cor in claude_svc.sugerir_correcoes(md, num):
+                for cor in llm.sugerir_correcoes(md, num, db_settings=cfg):
                     db.add(CorrecaoOCR(
                         documento_id=documento_id,
                         pagina=num,

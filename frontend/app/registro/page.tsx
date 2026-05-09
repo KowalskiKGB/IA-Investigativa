@@ -32,26 +32,31 @@ export default function RegistroPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
-      <form onSubmit={submit} className="card w-full max-w-md space-y-4">
-        <h1 className="text-2xl font-bold">Criar conta</h1>
+      <form onSubmit={submit} className="card-elev w-full max-w-md space-y-4">
+        <Link href="/" className="brand">
+          <span className="brand-mark" />
+          <span>Investiga</span>
+        </Link>
+        <div className="divider-gold" />
+        <h1 className="serif text-3xl">Criar escritório</h1>
         <input className="input" placeholder="Nome do escritório"
           value={form.nome_escritorio}
           onChange={(e) => setForm({ ...form, nome_escritorio: e.target.value })} required />
         <input className="input" placeholder="Seu nome"
           value={form.nome_usuario}
           onChange={(e) => setForm({ ...form, nome_usuario: e.target.value })} required />
-        <input className="input" placeholder="Email" type="email"
+        <input className="input" placeholder="E-mail" type="email"
           value={form.email}
           onChange={(e) => setForm({ ...form, email: e.target.value })} required />
         <input className="input" placeholder="Senha (mín. 8 caracteres)" type="password" minLength={8}
           value={form.senha}
           onChange={(e) => setForm({ ...form, senha: e.target.value })} required />
-        {erro && <p className="text-red-400 text-sm">{erro}</p>}
+        {erro && <p className="text-sm" style={{ color: "var(--danger)" }}>{erro}</p>}
         <button className="btn w-full" disabled={loading}>
-          {loading ? "..." : "Criar conta"}
+          {loading ? "Criando…" : "Criar conta"}
         </button>
-        <p className="text-sm text-muted text-center">
-          Já tem conta? <Link href="/login" className="text-accent">Entrar</Link>
+        <p className="text-sm muted text-center">
+          Já tem conta? <Link href="/login">Entrar</Link>
         </p>
       </form>
     </main>

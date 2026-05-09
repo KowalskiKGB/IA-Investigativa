@@ -4,16 +4,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // paleta inspirada no tema Obsidian dark
-        bg: "#1e1e1e",
-        panel: "#262626",
-        accent: "#7f6df2",
-        muted: "#8a8a8a",
-        edge: "#3a3a3a",
-        ink: "#dcddde",
+        // paleta jurídica investigativa (deep navy + gold)
+        bg: "#0a1628",
+        panel: "#11233f",
+        soft: "#16294a",
+        accent: "#c8a45c",        // gold
+        "accent-soft": "#b58e3f",
+        muted: "#9ba8bd",
+        edge: "#1f3559",
+        ink: "#e8e3d3",
       },
       fontFamily: {
-        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        serif: ["Cormorant Garamond", "Georgia", "serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
       },
     },
   },

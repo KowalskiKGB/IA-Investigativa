@@ -34,7 +34,15 @@ class Usuario(Base):
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     senha_hash: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, default="membro")
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ConfigSistema(Base):
+    __tablename__ = "config_sistema"
+    chave: Mapped[str] = mapped_column(String, primary_key=True)
+    valor: Mapped[str | None] = mapped_column(Text)
+    atualizado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class Caso(Base):

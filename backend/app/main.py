@@ -1,17 +1,24 @@
 """FastAPI app entrypoint."""
 from contextlib import asynccontextmanager
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import auth, casos, documentos, chat, grafo, correcoes
+from app.routers import auth, casos, documentos, chat, grafo, correcoes, admin
+
+log = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # startup: lazy — sem bloquear se infra ainda não subiu
+    # bootstrap idempotente — cria tabelas e seed admin
+    try:
+        from app.bootstrap import bootstrap
+        await bootstrap()
+    except Exception:
+        log.exception("Falha no bootstrap (continuando — talvez DB ainda não esteja pronto)")
     yield
-    # shutdown
 
 
 def create_app() -> FastAPI:
@@ -25,7 +32,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.app_env == "development" else [],
+        allow_origins=["*"],  # restringido por proxy/Cloudflare em produção
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -45,6 +52,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router, prefix="/chat", tags=["chat"])
     app.include_router(grafo.router, prefix="/grafo", tags=["grafo"])
     app.include_router(correcoes.router, prefix="/correcoes", tags=["correcoes"])
+    app.include_router(admin.router, prefix="/admin", tags=["admin"])
 
     return app
 

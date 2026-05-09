@@ -21,7 +21,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email TEXT UNIQUE NOT NULL,
     senha_hash TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'membro',
+    is_admin BOOLEAN NOT NULL DEFAULT FALSE,
     criado_em TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Configurações dinâmicas do sistema (editáveis pelo admin)
+CREATE TABLE IF NOT EXISTS config_sistema (
+    chave TEXT PRIMARY KEY,
+    valor TEXT,
+    atualizado_em TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Casos
