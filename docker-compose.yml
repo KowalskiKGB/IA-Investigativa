@@ -74,7 +74,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
-      - traefik.http.routers.investiga-backend.rule=Host(`api.adv-inv.rocketxsistemas.com.br`)
+      - traefik.http.routers.investiga-backend.rule=Host(`api-adv-inv.rocketxsistemas.com.br`)
       - traefik.http.routers.investiga-backend.entrypoints=http
       - traefik.http.routers.investiga-backend.service=investiga-backend
       - traefik.http.services.investiga-backend.loadbalancer.server.port=8000
