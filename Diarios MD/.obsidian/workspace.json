@@ -1,0 +1,212 @@
+{
+  "main": {
+    "id": "ec0b66fdfd03fea6",
+    "type": "split",
+    "children": [
+      {
+        "id": "f2503aada43e2643",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "76a19cd0354b285f",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Nova aba"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "00c67fc885760e6e",
+    "type": "split",
+    "children": [
+      {
+        "id": "6c47f0722c2424dd",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "88a998c563841442",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Explorador de arquivos"
+            }
+          },
+          {
+            "id": "c4c8b265df37e96b",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Procurar"
+            }
+          },
+          {
+            "id": "885c6d8ff6d0932f",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Marcadores"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "fcb0b9fd6b878f72",
+    "type": "split",
+    "children": [
+      {
+        "id": "cf8493ffad8e77e2",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1554f0d5e6d42dcf",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Links inversos"
+            }
+          },
+          {
+            "id": "4430fa412f805328",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Links de saída"
+            }
+          },
+          {
+            "id": "fff37f2e49daee3f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiquetas"
+            }
+          },
+          {
+            "id": "73e5cbc0f9d37c50",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Todas as propriedades"
+            }
+          },
+          {
+            "id": "77a81ea9754e93b1",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Sumário"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Abrir a troca rápida": false,
+      "graph:Abrir visualização em gráfico": false,
+      "canvas:Criar novo canvas": false,
+      "daily-notes:Abrir a nota de hoje": false,
+      "templates:Inserir modelo": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Criar nova base": false
+    }
+  },
+  "active": "88a998c563841442",
+  "lastOpenFiles": [
+    "Pessoas/kassyo-santos-ramos.md",
+    "Pessoas/antonio-paulo-de-oliveira-furlan.md",
+    "Orgaos/semed.md",
+    "Empresas/spacex-comercio-servicos-telecomunicacoes-ltda.md",
+    "Pessoas/antonio-targino-de-sousa-neto.md",
+    "Investigacoes/gabriel-guedes-gato-clc-gomes-investigacao-completa.md",
+    "2023/05/2023-05-02_Diário Oficial 4541 - 28.04.2023_.md",
+    "2026-05-08.md",
+    "Pessoas/diego-cesar-dos-santos-silva-trajano.md",
+    "Empresas/clc-gomes-empreendimentos.md",
+    "Pessoas/gabriel-guedes-gato.md",
+    "Pessoas/jose-elias-de-souza-rigamonti.md",
+    "INSTRUCOES-INVESTIGACAO.md",
+    "Empresas/ecm-tecnologia-e-solucoes-ltda.md",
+    "Pessoas/luciano-del-castillo-silva.md",
+    "Pessoas/leyse-monik-franca-nascimento.md",
+    "Pessoas/leda-maria-sadala-brito.md",
+    "Pessoas/leivo-rodrigues-dos-santos.md",
+    "Pessoas/leonardo-bruno-craveiro-de-oliveira.md",
+    "Pessoas/jose-furlan-neto.md",
+    "Investigacoes/fumcult-inexigibilidades-2023.md",
+    "Orgaos/semzur.md",
+    "Pessoas/jose-ferreira-rocha-filho.md",
+    "Temas/nepotismo-macapaprev.md",
+    "Pessoas/karyna-santos-ramos.md",
+    "Pessoas/janayna-gomes-da-silva-ramos.md",
+    "Sem título.canvas",
+    "Sem título 1.canvas",
+    "Correcoes",
+    "Templates"
+  ]
+}
