@@ -2,10 +2,14 @@
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export const apiBase = () => API;
+
 function token(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("token");
 }
+
+export const getToken = token;
 
 export async function api<T = any>(
   path: string,

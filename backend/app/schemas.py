@@ -46,6 +46,8 @@ class DocumentoOut(BaseModel):
     status: str
     total_paginas: int | None
     total_chunks: int | None
+    progresso: int = 0
+    erro: str | None = None
     criado_em: datetime
     class Config:
         from_attributes = True

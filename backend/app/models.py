@@ -66,6 +66,7 @@ class Documento(Base):
     status: Mapped[str] = mapped_column(String, default="pendente")
     total_paginas: Mapped[int | None] = mapped_column(Integer)
     total_chunks: Mapped[int | None] = mapped_column(Integer)
+    progresso: Mapped[int] = mapped_column(Integer, default=0)
     erro: Mapped[str | None] = mapped_column(Text)
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

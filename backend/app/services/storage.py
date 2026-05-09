@@ -41,6 +41,12 @@ def download_bytes(key: str) -> bytes:
     return obj["Body"].read()
 
 
+def deletar_arquivo(key: str) -> None:
+    """Remove um objeto do bucket."""
+    bucket = garantir_bucket()
+    _client().delete_object(Bucket=bucket, Key=key)
+
+
 def url_assinada(key: str, expira_segundos: int = 3600) -> str:
     bucket = garantir_bucket()
     return _client().generate_presigned_url(

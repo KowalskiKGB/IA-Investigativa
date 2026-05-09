@@ -83,3 +83,40 @@ async def construir_grafo_json(db: AsyncSession, cliente_id: uuid.UUID) -> dict:
         for r in rels_res.scalars()
     ]
     return {"nos": nos, "arestas": arestas}
+
+
+async def construir_grafo_json_por_caso(db: AsyncSession, caso_id: uuid.UUID) -> dict:
+    """Grafo filtrado apenas pelos documentos de um caso."""
+    from app.models import Documento
+    docs_res = await db.execute(select(Documento.id).where(Documento.caso_id == caso_id))
+    doc_ids = list(docs_res.scalars())
+    if not doc_ids:
+        return {"nos": [], "arestas": []}
+
+    rels_res = await db.execute(select(Relacao).where(Relacao.documento_id.in_(doc_ids)))
+    rels = list(rels_res.scalars())
+
+    ent_ids = set()
+    for r in rels:
+        ent_ids.add(r.origem_id)
+        ent_ids.add(r.destino_id)
+
+    nos: list[dict] = []
+    if ent_ids:
+        ents_res = await db.execute(select(Entidade).where(Entidade.id.in_(list(ent_ids))))
+        nos = [
+            {"id": str(e.id), "label": e.nome, "tipo": e.tipo, "identificador": e.identificador}
+            for e in ents_res.scalars()
+        ]
+
+    arestas = [
+        {
+            "source": str(r.origem_id),
+            "target": str(r.destino_id),
+            "tipo": r.tipo,
+            "pagina": r.pagina,
+            "documento": str(r.documento_id) if r.documento_id else None,
+        }
+        for r in rels
+    ]
+    return {"nos": nos, "arestas": arestas}

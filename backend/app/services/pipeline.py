@@ -1,5 +1,12 @@
-"""Pipeline de processamento de documento (background task)."""
+"""Pipeline de processamento de documento (background task).
+
+Fix v2:
+- Marca 'concluido' após OCR + embeddings (antes do LLM).
+- Extração de entidades / correções OCR roda em asyncio.create_task (bg) sem afetar status.
+- Todas as operações síncronas (OCR, embeddings) usam asyncio.to_thread para não bloquear o loop.
+"""
 from __future__ import annotations
+import asyncio
 import hashlib
 import uuid
 import logging
@@ -7,43 +14,46 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import SessionLocal
-from app.models import Documento, PaginaMD, CorrecaoOCR, Caso
+from app.models import Documento, PaginaMD, CorrecaoOCR
 from app.services import ocr, chunker, embeddings, vector_store, llm, graph as graph_svc, storage, settings_svc
 
 log = logging.getLogger(__name__)
 
 
 async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key: str):
-    """Executa o pipeline completo. Idempotente em caso de retry parcial."""
+    """OCR + embedding + marca concluido. LLM roda em background separado."""
     async with SessionLocal() as db:
         doc = await db.get(Documento, documento_id)
         if not doc:
             return
         doc.status = "processando"
+        doc.progresso = 5
         await db.commit()
 
     try:
-        pdf_bytes = storage.download_bytes(storage_key)
+        # 1. Download + OCR (síncronos → thread)
+        pdf_bytes = await asyncio.to_thread(storage.download_bytes, storage_key)
         sha = hashlib.sha256(pdf_bytes).hexdigest()
-        md_total, paginas = ocr.extrair_tudo(pdf_bytes)
+        md_total, paginas = await asyncio.to_thread(ocr.extrair_tudo, pdf_bytes)
 
-        # 1. Salvar páginas Markdown + metadados
+        # 2. Salvar páginas Markdown
         async with SessionLocal() as db:
             doc = await db.get(Documento, documento_id)
             doc.sha256 = sha
             doc.total_paginas = len(paginas)
+            doc.progresso = 55
             for num, md in paginas:
                 db.add(PaginaMD(documento_id=documento_id, numero=num, texto_md=md))
             await db.commit()
 
-        # 2. Chunking
+        # 3. Chunking
         chunks = chunker.chunk_paginas(
             paginas, str(documento_id), doc.nome_arquivo, tamanho=500, overlap=50
         )
 
-        # 3. Embeddings + indexação no Vector DB (namespace por cliente)
+        # 4. Embeddings + indexação (síncronos → thread)
         if chunks:
-            vetores = embeddings.gerar([c.texto for c in chunks])
+            vetores = await asyncio.to_thread(embeddings.gerar, [c.texto for c in chunks])
             ids = [f"{documento_id}:{c.indice}" for c in chunks]
             metas = [
                 {
@@ -54,17 +64,51 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
                 }
                 for c in chunks
             ]
-            vector_store.indexar(
-                str(cliente_id), ids, [c.texto for c in chunks], vetores, metas
+            await asyncio.to_thread(
+                vector_store.indexar, str(cliente_id), ids, [c.texto for c in chunks], vetores, metas
             )
 
-        # 4. Extração de entidades (1 vez por página) e correções OCR
+        # 5. Marcar CONCLUÍDO — documento já é pesquisável e acessível
+        async with SessionLocal() as db:
+            doc = await db.get(Documento, documento_id)
+            doc.total_chunks = len(chunks)
+            doc.status = "concluido"
+            doc.progresso = 90
+            await db.commit()
+
+        # 6. Extração LLM em background (não bloqueia status nem o loop)
+        asyncio.create_task(
+            _extrair_entidades_bg(documento_id, cliente_id, paginas)
+        )
+
+    except Exception as exc:
+        log.exception("Falha ao processar documento %s", documento_id)
+        async with SessionLocal() as db:
+            doc = await db.get(Documento, documento_id)
+            if doc:
+                doc.status = "erro"
+                doc.erro = str(exc)[:1000]
+                await db.commit()
+
+
+async def _extrair_entidades_bg(
+    documento_id: uuid.UUID,
+    cliente_id: uuid.UUID,
+    paginas: list[tuple[int, str]],
+) -> None:
+    """Extrai entidades + sugere correções OCR via LLM. Falhas não afetam o documento."""
+    try:
         async with SessionLocal() as db:
             cfg = await settings_svc.carregar_dict(db)
-            for num, md in paginas:
-                # 4a. Entidades / relações
-                ext = llm.extrair_entidades(md, num, db_settings=cfg)
-                ent_map: dict[str, "uuid.UUID"] = {}
+
+        for num, md in paginas:
+            if not md.strip():
+                continue
+
+            ext = await asyncio.to_thread(llm.extrair_entidades, md, num, cfg)
+
+            async with SessionLocal() as db:
+                ent_map: dict[str, object] = {}
                 for ent in ext.get("entidades", []):
                     if not ent.get("nome"):
                         continue
@@ -84,8 +128,8 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
                         documento_id, num, rel.get("trecho"),
                     )
 
-                # 4b. Correções de OCR
-                for cor in llm.sugerir_correcoes(md, num, db_settings=cfg):
+                correcoes = await asyncio.to_thread(llm.sugerir_correcoes, md, num, cfg)
+                for cor in correcoes:
                     db.add(CorrecaoOCR(
                         documento_id=documento_id,
                         pagina=num,
@@ -94,20 +138,15 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
                         motivo=cor.get("motivo"),
                         confianca=cor.get("confianca"),
                     ))
-            await db.commit()
-
-        # 5. Marcar concluído
-        async with SessionLocal() as db:
-            doc = await db.get(Documento, documento_id)
-            doc.total_chunks = len(chunks)
-            doc.status = "concluido"
-            await db.commit()
-
-    except Exception as exc:  # noqa: BLE001
-        log.exception("Falha ao processar documento %s", documento_id)
-        async with SessionLocal() as db:
-            doc = await db.get(Documento, documento_id)
-            if doc:
-                doc.status = "erro"
-                doc.erro = str(exc)[:1000]
                 await db.commit()
+
+        async with SessionLocal() as db:
+            doc = await db.get(Documento, documento_id)
+            if doc and doc.status == "concluido":
+                doc.progresso = 100
+                await db.commit()
+
+    except Exception:
+        log.exception("Falha na extração LLM (bg) para %s", documento_id)
+        # Não altera o status — documento permanece 'concluido' e pesquisável
+

@@ -545,6 +545,12 @@ a:hover { color: var(--gold); }
   border-radius: 14px;
 }
 
+/* ---------- doc viewer ---------- */
+.doc-tab-active {
+  border-bottom: 2px solid var(--gold);
+  color: var(--gold);
+}
+
 /* gradient text */
 .gradient-text {
   background: linear-gradient(120deg, var(--gold-bright) 0%, var(--gold) 50%, var(--gold-soft) 100%);

@@ -23,6 +23,14 @@ async def _criar_tabelas():
             await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"'))
         except Exception:
             pass
+        # Migrações seguras (idempotentes)
+        for migration in [
+            "ALTER TABLE documentos ADD COLUMN IF NOT EXISTS progresso INTEGER NOT NULL DEFAULT 0",
+        ]:
+            try:
+                await conn.execute(text(migration))
+            except Exception:
+                pass
 
 
 async def _seed_admin():

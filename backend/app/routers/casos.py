@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import AuthContext, get_auth
 from app.db import get_db
-from app.models import Caso
+from app.models import Caso, Documento
 from app.schemas import CasoIn, CasoOut
+from app.services import storage, vector_store
 
 router = APIRouter()
 
@@ -33,3 +34,26 @@ async def obter(caso_id: uuid.UUID, ctx: AuthContext = Depends(get_auth), db: As
     if not caso or str(caso.cliente_id) != ctx.cliente_id:
         raise HTTPException(404, "Caso não encontrado")
     return caso
+
+
+@router.delete("/{caso_id}", status_code=204)
+async def excluir(caso_id: uuid.UUID, ctx: AuthContext = Depends(get_auth), db: AsyncSession = Depends(get_db)):
+    caso = await db.get(Caso, caso_id)
+    if not caso or str(caso.cliente_id) != ctx.cliente_id:
+        raise HTTPException(404, "Caso não encontrado")
+
+    # Limpar armazenamento e vetores de todos os documentos do caso
+    res = await db.execute(select(Documento).where(Documento.caso_id == caso_id))
+    docs = list(res.scalars())
+    for doc in docs:
+        try:
+            storage.deletar_arquivo(doc.url_storage)
+        except Exception:
+            pass
+        try:
+            vector_store.deletar_documento(ctx.cliente_id, str(doc.id))
+        except Exception:
+            pass
+
+    await db.delete(caso)
+    await db.commit()
