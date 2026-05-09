@@ -68,6 +68,22 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     expose:
       - "8000"
+    networks:
+      - default
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.investiga-backend-http.rule=Host(`api-investiga.191.6.127.114.sslip.io`)
+      - traefik.http.routers.investiga-backend-http.entrypoints=http
+      - traefik.http.routers.investiga-backend-http.middlewares=redirect-to-https
+      - traefik.http.routers.investiga-backend-https.rule=Host(`api-investiga.191.6.127.114.sslip.io`)
+      - traefik.http.routers.investiga-backend-https.entrypoints=https
+      - traefik.http.routers.investiga-backend-https.tls=true
+      - traefik.http.routers.investiga-backend-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.investiga-backend-https.service=investiga-backend
+      - traefik.http.services.investiga-backend.loadbalancer.server.port=8000
+      - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,8 +102,28 @@ services:
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     expose:
       - "3000"
+    networks:
+      - default
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.investiga-frontend-http.rule=Host(`investiga.191.6.127.114.sslip.io`)
+      - traefik.http.routers.investiga-frontend-http.entrypoints=http
+      - traefik.http.routers.investiga-frontend-http.middlewares=redirect-to-https
+      - traefik.http.routers.investiga-frontend-https.rule=Host(`investiga.191.6.127.114.sslip.io`)
+      - traefik.http.routers.investiga-frontend-https.entrypoints=https
+      - traefik.http.routers.investiga-frontend-https.tls=true
+      - traefik.http.routers.investiga-frontend-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.investiga-frontend-https.service=investiga-frontend
+      - traefik.http.services.investiga-frontend.loadbalancer.server.port=3000
     depends_on:
       - backend
+
+networks:
+  default:
+  coolify:
+    external: true
 
 volumes:
   postgres_data:
