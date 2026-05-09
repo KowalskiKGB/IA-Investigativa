@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "@/lib/api";
+import { Shell, IconUpload, IconNet, IconDoc, IconSpark } from "@/components/Shell";
 
 type Doc = { id: string; nome_arquivo: string; status: string; total_paginas: number | null };
 
@@ -18,6 +19,7 @@ export default function CasoPage() {
   const [drag, setDrag] = useState(false);
   const [enviandoFiles, setEnviandoFiles] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
 
   async function carregar() {
     const [d, h] = await Promise.all([
@@ -33,6 +35,10 @@ export default function CasoPage() {
     return () => clearInterval(t);
   }, [id]);
 
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [historico, resposta]);
+
   async function enviarArquivos(files: FileList | File[]) {
     const arr = Array.from(files);
     setEnviandoFiles(arr.length);
@@ -41,7 +47,7 @@ export default function CasoPage() {
       fd.append("arquivo", file);
       try {
         await api(`/documentos/${id}`, { method: "POST", body: fd });
-      } catch (e) { /* segue para próximo */ }
+      } catch { /* segue */ }
       setEnviandoFiles((n) => n - 1);
     }
     carregar();
@@ -59,21 +65,17 @@ export default function CasoPage() {
     } finally { setEnviando(false); }
   }
 
-  return (
-    <main className="max-w-7xl mx-auto p-6 space-y-6">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/casos" className="muted text-sm">← Casos</Link>
-          <span className="tag">Caso ativo</span>
-        </div>
-        <div className="flex gap-2">
-          <Link href={`/casos/${id}/grafo`} className="btn-ghost">Grafo do escritório</Link>
-        </div>
-      </header>
+  const concluidos = docs.filter(d => d.status === "concluido").length;
+  const processando = docs.filter(d => d.status !== "concluido" && d.status !== "erro").length;
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* coluna esquerda — upload + docs */}
-        <section className="lg:col-span-2 space-y-4">
+  return (
+    <Shell
+      crumbs={[{ label: "Casos", href: "/casos" }, { label: id?.slice(0, 8) || "Caso" }]}
+      actions={<Link href={`/casos/${id}/grafo`} className="btn-ghost"><IconNet /> Grafo do caso</Link>}
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+        {/* coluna esquerda */}
+        <section className="lg:col-span-2 space-y-4 anim-in">
           <div
             className={`dropzone ${drag ? "drag" : ""}`}
             onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
@@ -84,68 +86,89 @@ export default function CasoPage() {
             }}
             onClick={() => fileRef.current?.click()}
           >
+            <div className="feat-icon mx-auto"><IconUpload /></div>
             <div className="serif text-2xl gold">Carregar evidências</div>
             <p className="muted text-sm mt-1">
-              Arraste PDFs ou imagens · ou clique para escolher · múltiplos arquivos suportados
+              Arraste PDFs ou imagens · ou clique para escolher · múltiplos arquivos
             </p>
             <input
               ref={fileRef} type="file" hidden multiple accept="application/pdf,image/*"
               onChange={(e) => e.target.files && enviarArquivos(e.target.files)}
             />
             {enviandoFiles > 0 && (
-              <p className="text-sm gold mt-3">Enviando… ({enviandoFiles} restantes)</p>
+              <div className="mt-3">
+                <span className="tag"><span className="spinner" /> Enviando {enviandoFiles}…</span>
+              </div>
             )}
           </div>
 
           <div className="card">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="serif text-xl">Autos do caso</h2>
-              <span className="muted text-xs">{docs.length} documento(s)</span>
+              <div className="flex gap-2">
+                <span className="tag tag-ok">{concluidos} pronto(s)</span>
+                {processando > 0 && <span className="tag tag-info"><span className="spinner" style={{ width: 10, height: 10 }} /> {processando}</span>}
+              </div>
             </div>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-1 text-sm" style={{ maxHeight: 480, overflowY: "auto" }}>
               {docs.map((d) => (
-                <li key={d.id} className="flex justify-between gap-2 border-b border-[var(--line)] pb-2">
-                  <Link href={`/casos/${id}/correcoes/${d.id}`} className="truncate">
-                    {d.nome_arquivo}
+                <li key={d.id} className="flex justify-between items-center gap-2 px-2 py-2 rounded-md hover:bg-[var(--bg-soft)] transition">
+                  <Link href={`/casos/${id}/correcoes/${d.id}`} className="flex items-center gap-2 min-w-0 flex-1" style={{ color: "var(--ink-soft)" }}>
+                    <IconDoc />
+                    <span className="truncate">{d.nome_arquivo}</span>
                   </Link>
-                  <span className="text-xs whitespace-nowrap" style={{
-                    color: d.status === "concluido" ? "var(--ok)" :
-                           d.status === "erro" ? "var(--danger)" : "var(--ink-muted)"
-                  }}>
-                    {d.status}{d.total_paginas ? ` · ${d.total_paginas}p` : ""}
+                  <span className={`status-pill ${d.status === "concluido" ? "tag-ok" : d.status === "erro" ? "tag-danger" : "tag-info"}`}>
+                    {d.status === "concluido" ? "✓" : d.status === "erro" ? "✕" : <span className="spinner" style={{ width: 10, height: 10 }} />}
+                    {d.total_paginas ? `${d.total_paginas}p` : d.status}
                   </span>
                 </li>
               ))}
-              {docs.length === 0 && <p className="muted">Nenhum documento ainda. Carregue acima.</p>}
+              {docs.length === 0 && (
+                <li className="muted text-center py-6">Nenhum documento ainda. Arraste acima para começar.</li>
+              )}
             </ul>
           </div>
         </section>
 
         {/* coluna direita — chat */}
-        <section className="lg:col-span-3 card-elev flex flex-col" style={{ minHeight: 640 }}>
+        <section className="lg:col-span-3 card-elev flex flex-col anim-in-1" style={{ minHeight: 680 }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="serif text-2xl">Inquérito assistido</h2>
-            <span className="tag">Cita fonte e página</span>
+            <div>
+              <span className="kicker">Inquérito assistido</span>
+              <h2 className="h-display text-3xl mt-1">Pergunte aos autos</h2>
+            </div>
+            <span className="tag"><IconSpark /> Cita fonte e página</span>
           </div>
           <div className="divider-gold mb-3" />
-          <div className="flex-1 overflow-y-auto space-y-3 mb-3 pr-2">
-            {historico.length === 0 && (
-              <p className="muted text-sm italic">
-                Nenhuma pergunta ainda. Comece perguntando, por exemplo:
-                "Quais empresas aparecem nos diários e em quantas páginas?"
-              </p>
+
+          <div ref={chatRef} className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2" style={{ minHeight: 380 }}>
+            {historico.length === 0 && !enviando && (
+              <div className="muted text-center py-12">
+                <div className="feat-icon mx-auto"><IconSpark /></div>
+                <p className="serif text-xl gold mt-3">Comece a investigação</p>
+                <p className="text-sm mt-2 max-w-sm mx-auto">
+                  Exemplos: "Quais empresas aparecem nos diários e em quantas páginas?" · "Liste os processos envolvendo o réu X" · "Resuma as decisões de 2024"
+                </p>
+              </div>
             )}
             {historico.map((m, i) => (
               <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-                <div className={`max-w-[85%] px-4 py-3 text-sm whitespace-pre-wrap ${m.role === "user" ? "bubble-user" : "bubble-bot"}`}>
+                <div className={`max-w-[85%] text-sm whitespace-pre-wrap ${m.role === "user" ? "bubble-user" : "bubble-bot"}`}>
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.conteudo}</ReactMarkdown>
                 </div>
               </div>
             ))}
+            {enviando && (
+              <div className="flex justify-start">
+                <div className="bubble-bot text-sm flex items-center gap-2">
+                  <span className="spinner" /> Investigando os autos…
+                </div>
+              </div>
+            )}
             {resposta?.fontes?.length > 0 && (
-              <div className="text-xs muted border-t border-[var(--line)] pt-2">
+              <div className="text-xs muted border-t border-[var(--line)] pt-3 mt-3">
                 <strong className="gold">Fontes citadas:</strong>
-                <ul className="list-disc ml-5 mt-1">
+                <ul className="list-disc ml-5 mt-1 space-y-0.5">
                   {resposta.fontes.map((f: any, i: number) => (
                     <li key={i}>{f.nome_arquivo} · p. {f.pagina}</li>
                   ))}
@@ -153,6 +176,7 @@ export default function CasoPage() {
               </div>
             )}
           </div>
+
           <form onSubmit={perguntar} className="flex gap-2">
             <input
               className="input"
@@ -160,12 +184,12 @@ export default function CasoPage() {
               value={pergunta}
               onChange={(e) => setPergunta(e.target.value)}
             />
-            <button className="btn" disabled={enviando}>
-              {enviando ? "Investigando…" : "Perguntar"}
+            <button className="btn" disabled={enviando || !pergunta.trim()}>
+              {enviando ? <span className="spinner" /> : "Perguntar →"}
             </button>
           </form>
         </section>
       </div>
-    </main>
+    </Shell>
   );
 }
