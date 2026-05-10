@@ -27,6 +27,17 @@ _IMAGE_MAGIC = [
     (b'BM', "image/bmp"),
 ]
 
+_IMAGE_MIME: set[str] = {
+    "image/png", "image/jpeg", "image/jpg", "image/gif",
+    "image/webp", "image/tiff", "image/bmp", "image/heic",
+    "image/heif", "image/avif", "image/svg+xml",
+}
+
+
+def mime_is_image(mime: str | None) -> bool:
+    """Return True if the MIME type indicates an image (not a PDF)."""
+    return (mime or "").split(";")[0].strip().lower() in _IMAGE_MIME
+
 
 def _is_image(data: bytes) -> bool:
     for magic, _ in _IMAGE_MAGIC:
@@ -79,13 +90,57 @@ def extrair_imagem(image_bytes: bytes) -> tuple[str, list[tuple[int, str]]]:
     return md, [(1, md)]
 
 
-def extrair_tudo(pdf_bytes: bytes) -> tuple[str, list[tuple[int, str]]]:
+def contar_paginas_pdf(pdf_bytes: bytes) -> int:
+    """Return total page count of a PDF (fast, no text extraction)."""
+    with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
+        return len(pdf.pages)
+
+
+def extrair_texto_nativo_pdf(
+    pdf_bytes: bytes,
+) -> tuple[dict[int, str], list[int]]:
+    """First pass over a PDF: extract embedded text in one pdfplumber session.
+
+    Returns:
+        com_texto  – {page_num: markdown_text} for pages that had embedded text.
+        vazias     – list of 1-indexed page numbers that had no embedded text.
+    """
+    com_texto: dict[int, str] = {}
+    vazias: list[int] = []
+    with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
+        for idx, pagina in enumerate(pdf.pages, start=1):
+            texto = (pagina.extract_text() or "").strip()
+            if texto:
+                com_texto[idx] = _para_md(idx, texto)
+            else:
+                vazias.append(idx)
+    return com_texto, vazias
+
+
+def ocr_pagina_unica(pdf_bytes: bytes, page_num: int) -> tuple[int, str]:
+    """OCR a single 1-indexed PDF page via poppler + tesseract (efficient)."""
+    try:
+        imgs = convert_from_bytes(
+            pdf_bytes, dpi=200, first_page=page_num, last_page=page_num
+        )
+        texto = _ocr_imagem(imgs[0]).strip() if imgs else ""
+    except Exception:
+        texto = ""
+    return page_num, _para_md(page_num, texto, ocr=True)
+
+
+def extrair_tudo(
+    pdf_bytes: bytes,
+    mime_type: str | None = None,
+) -> tuple[str, list[tuple[int, str]]]:
     """Retorna (markdown_concatenado, [(num, md_pagina)...]).
 
     Detecta automaticamente imagens (PNG/JPG/etc.) e as processa via OCR direto,
     sem tentar abrir como PDF.
+
+    O parâmetro *mime_type* é usado como detecção primária; magic bytes como fallback.
     """
-    if _is_image(pdf_bytes):
+    if mime_is_image(mime_type) or _is_image(pdf_bytes):
         return extrair_imagem(pdf_bytes)
 
     paginas: dict[int, str] = {}

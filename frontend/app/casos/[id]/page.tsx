@@ -20,6 +20,26 @@ type Doc = {
 };
 type Grafo = { nos: any[]; arestas: any[] };
 
+function stageLabel(d: Doc): string {
+  const p = d.progresso;
+  if (p <= 5)  return "Iniciando…";
+  if (p <= 15) return "Baixando arquivo…";
+  if (p < 52) {
+    if (d.total_paginas && d.total_paginas > 0) {
+      // PDF path: OCR runs ~12%→50%; estimate current page from progress
+      const frac = Math.max(0, (p - 12) / 40);
+      const pageEst = Math.min(d.total_paginas, Math.max(1, Math.round(frac * d.total_paginas)));
+      if (p >= 48) return "Extraindo texto nativo…";
+      return `OCR pág. ${pageEst} de ${d.total_paginas}…`;
+    }
+    return "Reconhecendo imagem (OCR)…";
+  }
+  if (p <= 60) return "Salvando texto extraído…";
+  if (p <= 80) return "Indexando para busca…";
+  return "Finalizando…";
+}
+
+
 function ProgressBar({ progresso, status }: { progresso: number; status: string }) {
   const cor = status === "concluido" ? "var(--ok)" : status === "erro" ? "var(--danger)" : "var(--gold)";
   const pct = status === "concluido" ? 100 : progresso;
@@ -197,7 +217,9 @@ export default function CasoPage() {
                     <div className="px-2 pb-1">
                       <ProgressBar progresso={d.progresso} status={d.status} />
                       <span className="muted" style={{ fontSize: 10 }}>
-                        {d.status === "erro" ? `Erro: ${d.erro?.slice(0, 80) || "desconhecido"}` : `${d.progresso}% — ${d.status}`}
+                        {d.status === "erro"
+                          ? `Erro: ${d.erro?.slice(0, 80) || "desconhecido"}`
+                          : `${d.progresso}% — ${stageLabel(d)}`}
                       </span>
                     </div>
                   )}

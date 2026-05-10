@@ -26,32 +26,100 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
         doc = await db.get(Documento, documento_id)
         if not doc:
             return
+        mime_type = doc.mime_type  # capture before session closes
         doc.status = "processando"
         doc.progresso = 5
         await db.commit()
 
     try:
-        # 1. Download + OCR (síncronos → thread)
+        # ── 1. Download ───────────────────────────────────────────────────────
         pdf_bytes = await asyncio.to_thread(storage.download_bytes, storage_key)
         sha = hashlib.sha256(pdf_bytes).hexdigest()
-        md_total, paginas = await asyncio.to_thread(ocr.extrair_tudo, pdf_bytes)
 
-        # 2. Salvar páginas Markdown
-        async with SessionLocal() as db:
-            doc = await db.get(Documento, documento_id)
-            doc.sha256 = sha
-            doc.total_paginas = len(paginas)
-            doc.progresso = 55
-            for num, md in paginas:
-                db.add(PaginaMD(documento_id=documento_id, numero=num, texto_md=md))
-            await db.commit()
+        # ── 2. OCR — caminho diferente para imagens vs PDFs ──────────────────
+        is_image = ocr.mime_is_image(mime_type) or ocr._is_image(pdf_bytes)
 
-        # 3. Chunking
+        if is_image:
+            # ── 2a. IMAGE PATH ──────────────────────────────────────────────
+            # Update: downloaded, about to OCR
+            async with SessionLocal() as db:
+                doc = await db.get(Documento, documento_id)
+                doc.sha256 = sha
+                doc.total_paginas = 1
+                doc.progresso = 15
+                await db.commit()
+
+            _, paginas = await asyncio.to_thread(ocr.extrair_imagem, pdf_bytes)
+
+            # Save pages + mark OCR done
+            async with SessionLocal() as db:
+                doc = await db.get(Documento, documento_id)
+                doc.progresso = 52
+                for num, md in paginas:
+                    db.add(PaginaMD(documento_id=documento_id, numero=num, texto_md=md))
+                await db.commit()
+
+        else:
+            # ── 2b. PDF PATH — per-page progress ───────────────────────────
+            # Count pages first (fast)
+            n_pages = await asyncio.to_thread(ocr.contar_paginas_pdf, pdf_bytes)
+            async with SessionLocal() as db:
+                doc = await db.get(Documento, documento_id)
+                doc.sha256 = sha
+                doc.total_paginas = n_pages
+                doc.progresso = 10
+                await db.commit()
+
+            # Native text extraction (one pdfplumber session — fast)
+            com_texto, vazias = await asyncio.to_thread(
+                ocr.extrair_texto_nativo_pdf, pdf_bytes
+            )
+            paginas_dict: dict[int, str] = dict(com_texto)
+
+            # Progress after native extraction: proportional to how many pages
+            # actually needed OCR (text-only PDFs jump to ~48% right away)
+            native_pct = 48 if not vazias else max(12, 20 - int(20 * len(vazias) / max(n_pages, 1)))
+            async with SessionLocal() as db:
+                doc = await db.get(Documento, documento_id)
+                doc.progresso = native_pct
+                await db.commit()
+
+            # Per-page OCR for empty (scanned) pages — progress 12%→50%
+            if vazias:
+                ocr_start = native_pct
+                ocr_end = 50
+                for i, page_num in enumerate(vazias):
+                    num, md = await asyncio.to_thread(
+                        ocr.ocr_pagina_unica, pdf_bytes, page_num
+                    )
+                    paginas_dict[num] = md
+                    pct = ocr_start + int((ocr_end - ocr_start) * (i + 1) / len(vazias))
+                    async with SessionLocal() as db:
+                        doc = await db.get(Documento, documento_id)
+                        doc.progresso = pct
+                        await db.commit()
+
+            paginas = sorted(paginas_dict.items())
+
+            # Save pages
+            async with SessionLocal() as db:
+                doc = await db.get(Documento, documento_id)
+                doc.progresso = 55
+                for num, md in paginas:
+                    db.add(PaginaMD(documento_id=documento_id, numero=num, texto_md=md))
+                await db.commit()
+
+        # ── 3. Chunking ───────────────────────────────────────────────────────
         chunks = chunker.chunk_paginas(
             paginas, str(documento_id), doc.nome_arquivo, tamanho=500, overlap=50
         )
 
-        # 4. Embeddings + indexação (síncronos → thread)
+        # ── 4. Embeddings + indexação ─────────────────────────────────────────
+        async with SessionLocal() as db:
+            doc = await db.get(Documento, documento_id)
+            doc.progresso = 60
+            await db.commit()
+
         if chunks:
             vetores = await asyncio.to_thread(embeddings.gerar, [c.texto for c in chunks])
             ids = [f"{documento_id}:{c.indice}" for c in chunks]
@@ -74,15 +142,20 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
                     documento_id, chroma_err,
                 )
 
-        # 5. Marcar CONCLUÍDO — documento já é pesquisável e acessível
+        async with SessionLocal() as db:
+            doc = await db.get(Documento, documento_id)
+            doc.progresso = 80
+            await db.commit()
+
+        # ── 5. Marcar CONCLUÍDO ────────────────────────────────────────────────
         async with SessionLocal() as db:
             doc = await db.get(Documento, documento_id)
             doc.total_chunks = len(chunks)
             doc.status = "concluido"
-            doc.progresso = 90
+            doc.progresso = 100
             await db.commit()
 
-        # 6. Extração LLM em background (não bloqueia status nem o loop)
+        # ── 6. Extração LLM em background ────────────────────────────────────
         asyncio.create_task(
             _extrair_entidades_bg(documento_id, cliente_id, paginas)
         )
