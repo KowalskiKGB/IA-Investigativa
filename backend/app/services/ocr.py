@@ -1,8 +1,10 @@
 """OCR / extração de texto.
 
 Estratégia:
-1. Tenta `pdfplumber` (PDF digital — texto embutido)
-2. Se a página vier vazia, faz fallback OCR via `pytesseract`
+1. Detecta se o arquivo é imagem (PNG/JPG/WEBP/TIFF/BMP) pelos magic bytes.
+   Nesse caso, usa PIL + pytesseract diretamente (sem pdfplumber).
+2. Para PDFs: tenta `pdfplumber` (texto embutido).
+   Se a página vier vazia, faz fallback OCR via `pytesseract` + pdf2image.
 3. Cada página retorna texto Markdown (cabeçalho `## Página N`)
 """
 from __future__ import annotations
@@ -12,6 +14,25 @@ from typing import Iterator
 import pdfplumber
 from pdf2image import convert_from_bytes
 import pytesseract
+from PIL import Image
+
+
+_IMAGE_MAGIC = [
+    (b'\x89PNG', "image/png"),
+    (b'\xff\xd8', "image/jpeg"),
+    (b'GIF8', "image/gif"),
+    (b'RIFF', "image/webp"),   # RIFF....WEBP
+    (b'II*\x00', "image/tiff"),
+    (b'MM\x00*', "image/tiff"),
+    (b'BM', "image/bmp"),
+]
+
+
+def _is_image(data: bytes) -> bool:
+    for magic, _ in _IMAGE_MAGIC:
+        if data[: len(magic)] == magic:
+            return True
+    return False
 
 
 def _ocr_imagem(img) -> str:
@@ -50,8 +71,23 @@ def _para_md(numero: int, texto: str, ocr: bool = False) -> str:
     return f"## Página {numero}{flag}\n\n{texto}\n"
 
 
+def extrair_imagem(image_bytes: bytes) -> tuple[str, list[tuple[int, str]]]:
+    """Extrai texto de um arquivo de imagem (PNG/JPG/WEBP/TIFF/BMP) via OCR direto."""
+    img = Image.open(BytesIO(image_bytes)).convert("RGB")
+    texto = pytesseract.image_to_string(img, lang="por").strip()
+    md = _para_md(1, texto, ocr=True)
+    return md, [(1, md)]
+
+
 def extrair_tudo(pdf_bytes: bytes) -> tuple[str, list[tuple[int, str]]]:
-    """Retorna (markdown_concatenado, [(num, md_pagina)...])."""
+    """Retorna (markdown_concatenado, [(num, md_pagina)...]).
+
+    Detecta automaticamente imagens (PNG/JPG/etc.) e as processa via OCR direto,
+    sem tentar abrir como PDF.
+    """
+    if _is_image(pdf_bytes):
+        return extrair_imagem(pdf_bytes)
+
     paginas: dict[int, str] = {}
     for num, md in extrair_paginas(pdf_bytes):
         paginas[num] = md

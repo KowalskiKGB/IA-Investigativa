@@ -64,9 +64,15 @@ async def processar(documento_id: uuid.UUID, cliente_id: uuid.UUID, storage_key:
                 }
                 for c in chunks
             ]
-            await asyncio.to_thread(
-                vector_store.indexar, str(cliente_id), ids, [c.texto for c in chunks], vetores, metas
-            )
+            try:
+                await asyncio.to_thread(
+                    vector_store.indexar, str(cliente_id), ids, [c.texto for c in chunks], vetores, metas
+                )
+            except Exception as chroma_err:
+                log.warning(
+                    "ChromaDB indexing falhou para %s (documento ainda acessível via texto): %s",
+                    documento_id, chroma_err,
+                )
 
         # 5. Marcar CONCLUÍDO — documento já é pesquisável e acessível
         async with SessionLocal() as db:

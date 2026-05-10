@@ -41,7 +41,6 @@ export default function CasoPage() {
   const [drag, setDrag] = useState(false);
   const [enviandoFiles, setEnviandoFiles] = useState(0);
   const [grafoData, setGrafoData] = useState<Grafo | null>(null);
-  const [mostrarGrafo, setMostrarGrafo] = useState(false);
   const [excluindo, setExcluindo] = useState<string | null>(null);
   const [confirmarDoc, setConfirmarDoc] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -113,7 +112,6 @@ export default function CasoPage() {
 
   const concluidos = docs.filter(d => d.status === "concluido").length;
   const processando = docs.filter(d => d.status !== "concluido" && d.status !== "erro").length;
-  const temEntidades = (grafoData?.nos?.length ?? 0) > 0;
 
   return (
     <Shell
@@ -211,30 +209,30 @@ export default function CasoPage() {
             </ul>
           </div>
 
-          {/* Mini grafo — aparece quando há entidades extraídas */}
-          {temEntidades && (
-            <div className="card anim-in-2">
-              <button
-                className="w-full flex items-center justify-between text-sm"
-                onClick={() => setMostrarGrafo(!mostrarGrafo)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)" }}
-              >
-                <span className="flex items-center gap-2">
-                  <IconNet />
-                  <strong className="gold">Grafo ao vivo</strong>
-                  <span className="tag tag-info" style={{ fontSize: 10 }}>
-                    {grafoData?.nos.length} entidades
-                  </span>
+          {/* Grafo ao vivo — sempre visível */}
+          <div className="card anim-in-2">
+            <div className="flex items-center justify-between mb-3">
+              <span className="flex items-center gap-2 text-sm font-semibold" style={{ color: "var(--ink-soft)" }}>
+                <IconNet />
+                Grafo de entidades
+              </span>
+              {(grafoData?.nos?.length ?? 0) > 0 && (
+                <span className="tag tag-info" style={{ fontSize: 10 }}>
+                  {grafoData!.nos.length} entidades
                 </span>
-                <span className="muted">{mostrarGrafo ? "▲ recolher" : "▼ expandir"}</span>
-              </button>
-              {mostrarGrafo && (
-                <div className="mt-3" style={{ height: 360 }}>
-                  <GrafoViewer grafo={grafoData ?? undefined} />
-                </div>
               )}
             </div>
-          )}
+            <div style={{ height: 320 }}>
+              {(grafoData?.nos?.length ?? 0) === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full muted text-sm text-center gap-2">
+                  <IconNet />
+                  <span>O grafo será gerado conforme os documentos forem processados</span>
+                </div>
+              ) : (
+                <GrafoViewer grafo={grafoData ?? undefined} />
+              )}
+            </div>
+          </div>
         </section>
 
         {/* coluna direita — chat */}
