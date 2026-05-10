@@ -54,9 +54,9 @@ export default function CasosPage() {
       <div className="space-y-7">
         <div className="anim-in flex items-end justify-between flex-wrap gap-4">
           <div>
-            <span className="kicker">InvestigaÃ§Ã£o jurÃ­dica</span>
-            <h1 className="h-display text-4xl mt-2">Casos do escritÃ³rio</h1>
-            <p className="muted text-sm mt-2">PDFs, contratos, certidÃµes, diÃ¡rios, planilhas â€” qualquer documento jurÃ­dico.</p>
+            <span className="kicker">Investigação jurídica</span>
+            <h1 className="h-display text-4xl mt-2">Casos do escritório</h1>
+            <p className="muted text-sm mt-2">PDFs, contratos, certidões, diários, planilhas — qualquer documento jurídico.</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="tag">{casos.length} caso(s)</span>
@@ -66,16 +66,16 @@ export default function CasosPage() {
         <form onSubmit={criar} className="card-elev anim-in-1 grid md:grid-cols-[1fr_2fr_auto] gap-3 items-end">
           <div>
             <label className="field-label">Novo caso</label>
-            <input className="input" placeholder="Ex: OperaÃ§Ã£o Alpha / Contrato XYZ"
+            <input className="input" placeholder="Ex: Operação Alpha / Contrato XYZ"
               value={novo.nome} onChange={(e) => setNovo({ ...novo, nome: e.target.value })} required />
           </div>
           <div>
-            <label className="field-label">DescriÃ§Ã£o (opcional)</label>
+            <label className="field-label">Descrição (opcional)</label>
             <input className="input" placeholder="Pessoas, empresas, contratos envolvidos..."
               value={novo.descricao} onChange={(e) => setNovo({ ...novo, descricao: e.target.value })} />
           </div>
           <button className="btn" disabled={criando}>
-            {criando ? <><span className="spinner" /> Criandoâ€¦</> : <><IconPlus /> Criar caso</>}
+            {criando ? <><span className="spinner" /> Criando…</> : <><IconPlus /> Criar caso</>}
           </button>
         </form>
 
@@ -97,7 +97,7 @@ export default function CasosPage() {
               <div className="feat-icon mx-auto"><IconFolder /></div>
               <h3 className="serif text-2xl gold mt-3">{filtro ? "Nenhum caso encontrado" : "Crie seu primeiro caso"}</h3>
               <p className="muted text-sm mt-2 max-w-md mx-auto">
-                {filtro ? "Tente outro termo de busca." : "Um caso pode ser qualquer investigaÃ§Ã£o: processo judicial, auditoria, due diligence..."}
+                {filtro ? "Tente outro termo de busca." : "Um caso pode ser qualquer investigação: processo judicial, auditoria, due diligence..."}
               </p>
             </div>
           ) : (
@@ -116,7 +116,7 @@ export default function CasosPage() {
                       {c.descricao && <p className="text-sm muted mt-1 truncate">{c.descricao}</p>}
                     </Link>
                     <div className="flex items-center gap-2">
-                      <Link href={`/casos/${c.id}`} className="muted text-sm whitespace-nowrap">Abrir â†’</Link>
+                      <Link href={`/casos/${c.id}`} className="muted text-sm whitespace-nowrap">Abrir →</Link>
                       {confirmar === c.id ? (
                         <div className="flex gap-1">
                           <button

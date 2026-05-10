@@ -37,12 +37,12 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen grid lg:grid-cols-2 relative overflow-hidden">
       {/* painel esquerdo — branding */}
-      <aside className="relative hidden lg:flex flex-col justify-between p-12 overflow-hidden" style={{ background: "linear-gradient(180deg, rgba(15,31,58,0.9) 0%, rgba(6,12,26,0.95) 100%)", borderRight: "1px solid var(--line)" }}>
+      <aside className="relative hidden lg:flex flex-col justify-between p-12 overflow-hidden" style={{ background: "var(--bg-deep-2)", borderRight: "1px solid var(--line)" }}>
         <div className="hero-grid" />
         <div className="hero-mesh" />
 
         <Link href="/" className="brand relative z-10">
-          <span className="brand-mark glow-pulse" />
+          <span className="brand-mark" />
           <span>Investiga</span>
         </Link>
 
