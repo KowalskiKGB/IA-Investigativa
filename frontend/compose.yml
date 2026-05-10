@@ -1,0 +1,33 @@
+version: "3.9"
+
+# Coolify: domínio configurado via SERVICE_FQDN_FRONTEND_3000
+# (ex.: adv-inv.rocketxsistemas.com.br)
+# A comunicação com o backend é via URL pública (NEXT_PUBLIC_API_URL),
+# portanto este compose não precisa estar na mesma stack do backend.
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - SERVICE_FQDN_FRONTEND_3000
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+    expose:
+      - "3000"
+    networks:
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.investiga-frontend.rule=Host(`adv-inv.rocketxsistemas.com.br`)
+      - traefik.http.routers.investiga-frontend.entrypoints=http
+      - traefik.http.routers.investiga-frontend.service=investiga-frontend
+      - traefik.http.services.investiga-frontend.loadbalancer.server.port=3000
+
+networks:
+  coolify:
+    external: true

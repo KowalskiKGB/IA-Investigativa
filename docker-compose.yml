@@ -87,29 +87,12 @@ services:
         condition: service_started
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    environment:
-      - SERVICE_FQDN_FRONTEND_3000
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
-      - HOSTNAME=0.0.0.0
-      - PORT=3000
-    expose:
-      - "3000"
-    networks:
-      - default
-      - coolify
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=coolify
-      - traefik.http.routers.investiga-frontend.rule=Host(`adv-inv.rocketxsistemas.com.br`)
-      - traefik.http.routers.investiga-frontend.entrypoints=http
-      - traefik.http.routers.investiga-frontend.service=investiga-frontend
-      - traefik.http.services.investiga-frontend.loadbalancer.server.port=3000
-    depends_on:
-      - backend
+    # Movido para frontend/compose.yml — este service ficaria duplicado
+    # ao ser deployado pela Coolify junto com o stack do backend.
+    # Mantido aqui apenas como placeholder, mas DESABILITADO via profiles.
+    image: tianon/true
+    profiles:
+      - disabled
 
 networks:
   default:
