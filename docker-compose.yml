@@ -80,11 +80,11 @@ services:
       - traefik.http.services.investiga-backend.loadbalancer.server.port=8000
     depends_on:
       pgdb:
-        condition: service_healthy
+        condition: service_started
       chromadb:
         condition: service_started
       minio:
-        condition: service_healthy
+        condition: service_started
 
   frontend:
     build:
