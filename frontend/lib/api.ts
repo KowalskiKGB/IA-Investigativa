@@ -11,6 +11,19 @@ function token(): string | null {
 
 export const getToken = token;
 
+export class ApiError extends Error {
+  status: number;
+  body: string;
+  isNetwork: boolean;
+  constructor(message: string, status: number, body = "", isNetwork = false) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+    this.isNetwork = isNetwork;
+  }
+}
+
 export async function api<T = any>(
   path: string,
   init: RequestInit = {}
@@ -22,10 +35,15 @@ export async function api<T = any>(
   const t = token();
   if (t) headers.set("Authorization", `Bearer ${t}`);
 
-  const res = await fetch(`${API}${path}`, { ...init, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, { ...init, headers });
+  } catch (e: any) {
+    throw new ApiError(e?.message || "Falha de rede", 0, "", true);
+  }
   if (!res.ok) {
-    const erro = await res.text();
-    throw new Error(erro || `HTTP ${res.status}`);
+    const body = await res.text().catch(() => "");
+    throw new ApiError(body || `HTTP ${res.status}`, res.status, body, false);
   }
   if (res.status === 204) return null as T;
   return res.json() as Promise<T>;

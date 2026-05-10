@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { api, setToken } from "@/lib/api";
+import { api, ApiError, setToken } from "@/lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,10 +28,31 @@ export default function LoginPage() {
         router.push("/casos");
       }
     } catch (e: any) {
-      setErro(e.message || "Credenciais inválidas");
+      setErro(mapLoginError(e));
     } finally {
       setLoading(false);
     }
+  }
+
+  function mapLoginError(e: any): string {
+    if (e instanceof ApiError) {
+      if (e.isNetwork || e.status === 0) {
+        return "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.";
+      }
+      if (e.status === 400 || e.status === 401 || e.status === 403 || e.status === 422) {
+        return "Usuário ou senha incorretos. Confira seus dados e tente novamente.";
+      }
+      if (e.status === 404) {
+        return "Conta não encontrada. Verifique o usuário ou crie um escritório.";
+      }
+      if (e.status === 429) {
+        return "Muitas tentativas. Aguarde alguns instantes e tente novamente.";
+      }
+      if (e.status >= 500) {
+        return "Serviço temporariamente indisponível. Estamos verificando — tente novamente em instantes.";
+      }
+    }
+    return "Não foi possível entrar. Tente novamente.";
   }
 
   return (

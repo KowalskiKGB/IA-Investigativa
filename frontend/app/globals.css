@@ -16,6 +16,12 @@
   --gold-soft:  #2b4c7e;
   --gold-deep:  #152a47;
 
+  /* tech accents — for "machine intelligence" feel */
+  --accent-cyan:    #06b6d4;
+  --accent-electric:#6366f1;
+  --accent-glow:    rgba(99, 102, 241, 0.18);
+  --accent-cyan-soft: rgba(6, 182, 212, 0.12);
+
   /* ink */
   --ink:        #111827;
   --ink-soft:   #374151;
@@ -436,7 +442,19 @@ a:hover { color: var(--gold); }
 .doc-tab-active { border-bottom: 2px solid var(--gold-bright); color: var(--gold-bright); }
 
 /* no gradient text — solid color */
-.gradient-text { color: var(--gold); }
+.gradient-text {
+  background: linear-gradient(120deg, var(--gold) 0%, var(--accent-electric) 55%, var(--accent-cyan) 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: gradientShift 8s ease-in-out infinite;
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
 
 /* hover ring */
 .ring-hover { transition: box-shadow 0.2s, border-color 0.2s; }
@@ -444,9 +462,103 @@ a:hover { color: var(--gold); }
 
 /* ---------- alerts ---------- */
 .alert {
-  border-radius: 10px;
-  padding: 0.85rem 1.05rem;
-  border: 1px solid var(--line);
+  border-radiutech grid + mesh — "machine intelligence" backdrop */
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgba(99,102,241,0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(99,102,241,0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 30%, #000 30%, transparent 75%);
+  animation: gridDrift 24s linear infinite;
+}
+@keyframes gridDrift {
+  0%   { background-position: 0 0, 0 0; }
+  100% { background-position: 56px 56px, 56px 56px; }
+}
+
+.hero-mesh {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(600px circle at 18% 20%, rgba(99,102,241,0.10), transparent 55%),
+    radial-gradient(500px circle at 85% 75%, rgba(6,182,212,0.10), transparent 55%),
+    radial-gradient(400px circle at 50% 100%, rgba(44,82,130,0.08), transparent 60%);
+  animation: meshPulse 14s ease-in-out infinite;
+}
+@keyframes meshPulse {
+  0%, 100% { opacity: 0.85; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.04); }
+}
+
+/* Animated brand mark — neural pulse */
+.brand-mark {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--accent-electric) 100%);
+  box-shadow:
+    0 1px 4px rgba(0,0,0,0.15),
+    0 0 0 0 var(--accent-glow);
+  animation: brandPulse 3.2s ease-in-out infinite;
+}
+@keyframes brandPulse {
+  0%, 100% { box-shadow: 0 1px 4px rgba(0,0,0,0.15), 0 0 0 0 var(--accent-glow); }
+  50%      { box-shadow: 0 1px 4px rgba(0,0,0,0.15), 0 0 0 8px transparent; }
+}
+
+/* Glassy elevated card with subtle border glow */
+.card-elev {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(99, 102, 241, 0.14);
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.08),
+    0 1px 3px rgba(0,0,0,0.05),
+    0 0 0 1px rgba(99, 102, 241, 0.04);
+  transition: box-shadow 0.3s, border-color 0.3s;
+}
+.card-elev:hover {
+  border-color: rgba(99, 102, 241, 0.28);
+  box-shadow:
+    0 10px 30px rgba(99, 102, 241, 0.10),
+    0 1px 3px rgba(0,0,0,0.05),
+    0 0 0 1px rgba(99, 102, 241, 0.10);
+}
+
+/* Primary button — tech accent on hover */
+.btn {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.18), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+}
+.btn:hover:not(:disabled)::before { transform: translateX(100%); }
+.btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--gold-bright) 0%, var(--accent-electric) 140%);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.22);
+}
+
+/* Input — tech focus ring */
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--accent-electric);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Caret line under typed value — subtle */
+@keyframes caretBlink { 50% { opacity: 0.4; } }
+
+/* Loading spinner — electric accent */
+.spinner { border-top-color: var(--accent-electric)line);
   background: var(--bg-panel);
   font-size: 0.9rem;
   display: flex;
