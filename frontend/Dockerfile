@@ -5,6 +5,9 @@ RUN npm install --no-audit --no-fund
 
 FROM node:20-alpine AS build
 WORKDIR /app
+# NEXT_PUBLIC_* vars must be available at build time; Next.js inlines them into the bundle
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npm run build
